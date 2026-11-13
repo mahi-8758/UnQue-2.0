@@ -4,13 +4,19 @@ const appointmentSchema = new mongoose.Schema(
   {
     studentId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User", // Reference to the User model (student)
+      ref: "User",
       required: true,
+      index: true,
     },
     professorId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User", // Reference to the User model (professor)
+      ref: "User",
       required: true,
+      index: true,
+    },
+    availabilityId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Availability",
     },
     time: {
       type: Date,
@@ -18,12 +24,18 @@ const appointmentSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["booked", "completed", "cancelled"], // The appointment status
+      enum: ["booked", "completed", "cancelled"],
       default: "booked",
     },
   },
-  { timestamps: true } // Automatically adds createdAt and updatedAt fields
+  { timestamps: true }
 );
 
-const Appointment =  mongoose.model('Appointment', appointmentSchema);
-export {Appointment}
+// Prevent duplicate active bookings for the same professor at the same time
+appointmentSchema.index(
+  { professorId: 1, time: 1 },
+  { unique: true, partialFilterExpression: { status: "booked" } }
+);
+
+const Appointment = mongoose.model("Appointment", appointmentSchema);
+export { Appointment };
