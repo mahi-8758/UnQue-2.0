@@ -2,7 +2,7 @@
 
 UnQue 2.0 is a REST API for managing student-professor appointments. Professors publish future availability, students reserve open time slots, and either side of the workflow can retrieve appointment information through role-protected endpoints.
 
-The application is built with Node.js, Express, MongoDB, and Mongoose. It is API-only; no frontend is included in this repository.
+The application is built with Node.js, Express, Amazon DocumentDB, and Mongoose. It is API-only; no frontend is included in this repository.
 
 ## Features
 
@@ -22,7 +22,7 @@ The application is built with Node.js, Express, MongoDB, and Mongoose. It is API
 
 - **Runtime:** Node.js (ES modules)
 - **Framework:** Express 4
-- **Database:** MongoDB through Mongoose 8
+- **Database:** Amazon DocumentDB through Mongoose 8
 - **Authentication:** JSON Web Tokens (`jsonwebtoken`)
 - **Password security:** `bcryptjs`
 - **Date handling:** `moment`
@@ -48,11 +48,11 @@ The application is built with Node.js, Express, MongoDB, and Mongoose. It is API
 
 - Node.js 18 or newer (Node.js 18 or 20 LTS is recommended by the deployment preflight script)
 - npm
-- MongoDB, either:
-  - a local MongoDB server, or
-  - a reachable MongoDB-compatible deployment
+- A database connection, either:
+  - a local MongoDB server for development, or
+  - an Amazon DocumentDB cluster for deployment
 
-The test command downloads or starts an ephemeral MongoDB through `mongodb-memory-server`; a separate local MongoDB instance is not required for tests.
+The test command downloads or starts an ephemeral MongoDB through `mongodb-memory-server`; a separate local database is not required for tests. Amazon DocumentDB is the intended deployment database.
 
 ## Installation
 
@@ -99,7 +99,7 @@ Development mode with automatic restart:
 npm run dev
 ```
 
-The API listens on `http://localhost:5001` by default, or on the port specified by `PORT`. The server connects to MongoDB before it starts accepting requests. If `MONGO_URL` is missing or the database connection fails, startup exits with an error.
+The API listens on `http://localhost:5001` by default, or on the port specified by `PORT`. The server connects to the configured database before it starts accepting requests. For local development, `MONGO_URL` can point to MongoDB. For deployment, it should contain the Amazon DocumentDB connection string, including the required TLS and authentication options for the cluster. If `MONGO_URL` is missing or the database connection fails, startup exits with an error.
 
 ## Authentication
 
@@ -238,7 +238,7 @@ Typical status codes are:
 - `status` (`booked`, `completed`, or `cancelled`)
 - timestamps
 
-Active appointments have a unique `{ professorId, time }` constraint. Cancelling an appointment marks it cancelled and reopens its associated availability slot.
+Active appointments have a unique `{ professorId, time }` constraint. Cancelling an appointment marks it cancelled and reopens its associated availability slot. The schemas use MongoDB-compatible Mongoose features supported by Amazon DocumentDB.
 
 ## Testing
 
@@ -256,7 +256,7 @@ The `scripts/` directory contains Bash helpers for an AWS deployment targeting `
 
 1. `00-preflight.sh` — read-only checks for AWS CLI, credentials, Node.js, npm, and region
 2. `01-network.sh` — network resource provisioning
-3. `02-documentdb.sh` — DocumentDB provisioning
+3. `02-documentdb.sh` — Amazon DocumentDB provisioning
 4. `03-ec2.sh` — EC2 provisioning and application setup
 
 Review each script and its required variables before running it. These scripts require Bash and AWS CLI and are not part of the local development workflow. Keep AWS environment files and `.pem` keys private; the repository's ignore rules exclude them.
@@ -265,7 +265,7 @@ Review each script and its required variables before running it. These scripts r
 
 - Use a strong, unique `JWT_SECRET` outside local development.
 - Use HTTPS and a restricted CORS policy in production rather than the current permissive default.
-- Protect MongoDB with authentication, network controls, and TLS as appropriate for the deployment.
+- Protect Amazon DocumentDB with authentication, private network controls, and TLS as appropriate for the deployment.
 - Do not commit `.env` files, AWS credentials, database credentials, or private keys.
 - The API logs requests with Morgan; ensure production log storage and retention comply with your operational requirements.
 - Validate and monitor database connectivity before exposing the service publicly.
